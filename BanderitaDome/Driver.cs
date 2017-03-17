@@ -420,7 +420,7 @@ namespace ASCOM.Banderita {
         }
 
         public void Park() {
-            SerialConnection.SendCommand(ArduinoSerial.SerialCommand.Park);
+            SerialConnection.SendCommand(ArduinoSerial.SerialCommand.Park, this.Config.ParkPosition);
 
             while (!this.Config.Parked)
                 HC.WaitForMilliseconds(100);

@@ -42,7 +42,7 @@ namespace ASCOM.Banderita {
                 this.Open();
         }
 
-        public ArduinoSerial() : this(StopBits.One, 9600, true) { }
+        public ArduinoSerial() : this(StopBits.One, 57600, true) { }
 
         private void ArduinoSerial_DataReceived(object sender, SerialDataReceivedEventArgs e) {
             CommandQueue.Push(this.ReadLine().Trim("\r".ToCharArray())); // Push latest command onto the stack
