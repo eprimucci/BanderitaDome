@@ -13,21 +13,26 @@ namespace ASCOM.Banderita {
         private bool _Parked = false;
         private bool _Slaved = false;
         private bool _Synced = false;
+        private bool _AtHome = false;
 
         private double _Azimuth = 0;
         private double _ParkPosition = 0;
+        private double _HomePosition = 0;
+        
 
         private string _ComPort = "COM14";     // Com port
 
         private ShutterState _ShutterStatus = ShutterState.shutterOpen;
 
         private Profile _Profile = new Profile();
+        
 
         public Config() {
             this._Profile.DeviceType = "Dome";
 
             try {
                 this._ParkPosition = this.GetDouble("ParkPosition");
+                this._HomePosition = this.GetDouble("HomePosition");
             }
             catch { }
         }
@@ -109,6 +114,19 @@ namespace ASCOM.Banderita {
         public double Azimuth {
             get { return this._Azimuth; }
             set { this._Azimuth = value; }
+        }
+
+        public bool AtHome {
+            get { return this._AtHome; }
+            set {this._AtHome = value;}
+        }
+
+        public double HomePosition {
+            get { return this._HomePosition; }
+            set {
+                this.WriteValue("HomePosition", value);
+                this._HomePosition = value;
+            }
         }
 
         public double ParkPosition {

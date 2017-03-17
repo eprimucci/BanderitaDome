@@ -61,9 +61,9 @@ namespace ASCOM.Banderita {
             // 
             this.label1.Location = new System.Drawing.Point(12, 9);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(123, 31);
+            this.label1.Size = new System.Drawing.Size(123, 45);
             this.label1.TabIndex = 2;
-            this.label1.Text = "Driver ASCOM para Domo La Banderita";
+            this.label1.Text = "Driver ASCOM para Domo La Banderita Versión 2017";
             // 
             // picASCOM
             // 
@@ -93,9 +93,9 @@ namespace ASCOM.Banderita {
             this.chkTrace.AutoSize = true;
             this.chkTrace.Location = new System.Drawing.Point(77, 118);
             this.chkTrace.Name = "chkTrace";
-            this.chkTrace.Size = new System.Drawing.Size(97, 17);
+            this.chkTrace.Size = new System.Drawing.Size(54, 17);
             this.chkTrace.TabIndex = 6;
-            this.chkTrace.Text = "Ayuda para Piri";
+            this.chkTrace.Text = "Trace";
             this.chkTrace.UseVisualStyleBackColor = true;
             // 
             // comboBoxComPort

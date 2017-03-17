@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 //
 // TODO - Add your authorship information here
 [assembly: AssemblyTitle("ASCOM.Banderita.Dome")]
-[assembly: AssemblyDescription("ASCOM Dome driver for Banderita")]
+[assembly: AssemblyDescription("ASCOM Dome driver for La Banderita")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("The ASCOM Initiative")]
-[assembly: AssemblyProduct("ASCOM Dome driver for Banderita")]
+[assembly: AssemblyProduct("ASCOM Dome driver for La Banderita")]
 [assembly: AssemblyCopyright("Copyright © 2016 The ASCOM Initiative")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -36,4 +36,4 @@ using System.Runtime.InteropServices;
 //
 // TODO - Set your driver's version here
 [assembly: AssemblyVersion("6.2.*")]
-[assembly: AssemblyFileVersion("6.2.0.0")]
+[assembly: AssemblyFileVersion("6.2.3.4")]

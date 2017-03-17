@@ -13,7 +13,7 @@ namespace ASCOM.Banderita {
         public delegate void CommandQueueReadyEventHandler(object sender, EventArgs e); // Our Process stack callback
         public event CommandQueueReadyEventHandler CommandQueueReady;
 
-        // Serial commands look like ": M 100 #"
+        // Serial commands look like ": S 100 #"
         public struct SerialCommand {
             public struct Syntax {
                 public static string Start = ":";
@@ -23,6 +23,7 @@ namespace ASCOM.Banderita {
 
             public static string Slew = "S";
             public static string Abort = "H";
+            public static string FindHome = "F";
             public static string Park = "P";
             public static string OpenShutter = "O" + Syntax.Spacer + "1";
             public static string CloseShutter = "O" + Syntax.Spacer + "0";

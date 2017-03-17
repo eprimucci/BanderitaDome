@@ -1,29 +1,22 @@
 //tabs=4
 // --------------------------------------------------------------------------------
-// TODO fill in this information for your driver, then remove this line!
-//
 // ASCOM Dome driver for Banderita
 //
-// Description:	Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam 
-//				nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam 
-//				erat, sed diam voluptua. At vero eos et accusam et justo duo 
-//				dolores et ea rebum. Stet clita kasd gubergren, no sea takimata 
-//				sanctus est Lorem ipsum dolor sit amet.
+// Description:	Handles the Arduino based Dome controller for La Banderita 
+//				observatory main dome.
 //
-// Implements:	ASCOM Dome interface version: <To be completed by driver developer>
-// Author:		(XXX) Your N. Here <your@email.here>
+// Implements:	ASCOM Dome interface version: 6.2
+// Author:		(PIR) Emilio Primucci <eprimucci@gmail.com>
 //
 // Edit Log:
 //
 // Date			Who	Vers	Description
 // -----------	---	-----	-------------------------------------------------------
-// dd-mmm-yyyy	XXX	6.0.0	Initial edit, created from ASCOM driver template
+// 10-08-2016	PIR	6.0.0	Initial edit, created from ASCOM driver template
+// 16-03-2017   PIR 6.2.5   Reviews and FindHome implemented
 // --------------------------------------------------------------------------------
 //
 
-
-// This is used to define code in the template that is specific to one class implementation
-// unused code canbe deleted and this definition removed.
 #define Dome
 
 using System;
@@ -39,6 +32,7 @@ using ASCOM.Utilities;
 using ASCOM.DeviceInterface;
 using System.Globalization;
 using System.Collections;
+using System.Linq;
 
 namespace ASCOM.Banderita {
     //
@@ -94,8 +88,8 @@ namespace ASCOM.Banderita {
         private ArduinoSerial SerialConnection;
 
         private Util HC = new Util();
-
         private Config Config = new Config();
+        private ArrayList supportedActions = new ArrayList();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Banderita"/> class.
@@ -110,9 +104,25 @@ namespace ASCOM.Banderita {
             connectedState = false; // Initialise connected to false
             utilities = new Util(); //Initialise util object
             astroUtilities = new AstroUtils(); // Initialise astro utilities object
-            //TODO: Implement your additional construction here
 
-            tl.LogMessage("Dome", "Completed initialisation");
+            // Implemented methods
+            supportedActions.Add("AbortSlew");
+            supportedActions.Add("CloseShutter");
+            // implementedMethods.Add("CommandBlind");
+            // implementedMethods.Add("CommandBool");
+            // implementedMethods.Add("CommandString");
+            supportedActions.Add("Dispose");
+            supportedActions.Add("FindHome");
+            supportedActions.Add("OpenShutter");
+            supportedActions.Add("Park");
+            supportedActions.Add("SetPark");
+            //supportedActions.Add("SetupDialog");
+            //supportedActions.Add("SlewToAltitude");
+            supportedActions.Add("SlewToAzimuth");
+            supportedActions.Add("SyncToAzimuth");
+
+
+            tl.LogMessage("Dome", "Completed initialisation. Supported: "+ string.Join(",", supportedActions.ToArray().Select(o => o.ToString()).ToArray()));
         }
 
 
@@ -141,11 +151,13 @@ namespace ASCOM.Banderita {
                 }
             }
         }
-
+        
         public ArrayList SupportedActions {
             get {
-                tl.LogMessage("SupportedActions Get", "Returning empty arraylist");
-                return new ArrayList();
+                tl.LogMessage("SupportedActions Get", "Returning implemented methods: "+ 
+                    string.Join(",", supportedActions.ToArray().Select(o => o.ToString()).ToArray())
+                    );
+                return supportedActions;
             }
         }
 
@@ -157,7 +169,7 @@ namespace ASCOM.Banderita {
         public void CommandBlind(string command, bool raw) {
             CheckConnected("CommandBlind");
             // Call CommandString and return as soon as it finishes
-            this.CommandString(command, raw);
+            //this.CommandString(command, raw);
             // or
             throw new ASCOM.MethodNotImplementedException("CommandBlind");
             // DO NOT have both these sections!  One or the other
@@ -165,7 +177,7 @@ namespace ASCOM.Banderita {
 
         public bool CommandBool(string command, bool raw) {
             CheckConnected("CommandBool");
-            string ret = CommandString(command, raw);
+            //string ret = CommandString(command, raw);
             // TODO decode the return string and return true or false
             // or
             throw new ASCOM.MethodNotImplementedException("CommandBool");
@@ -243,8 +255,10 @@ namespace ASCOM.Banderita {
 
         private bool domeShutterState = false; // Variable to hold the open/closed status of the shutter, true = Open
 
+
         public void AbortSlew() {
             SerialConnection.SendCommand(ArduinoSerial.SerialCommand.Abort);
+            this.Slaved = false;
             tl.LogMessage("AbortSlew", "Completed");
         }
 
@@ -256,10 +270,7 @@ namespace ASCOM.Banderita {
         }
 
         public bool AtHome {
-            get {
-                tl.LogMessage("AtHome Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("AtHome", false);
-            }
+            get { return this.Config.AtHome; }
         }
 
         public bool AtPark {
@@ -271,7 +282,7 @@ namespace ASCOM.Banderita {
         }
 
         public bool CanFindHome {
-            get { return false; }
+            get { return true; }
         }
 
         public bool CanPark {
@@ -342,6 +353,23 @@ namespace ASCOM.Banderita {
             return true;
         }
 
+
+        public void FindHome() {
+            if (this.Slaved) {
+                tl.LogMessage("FindHome", "Unable. I am Slaved!");
+                throw new ASCOM.SlavedException("El domo está en Slave. No puedo encontrar HOME así!");
+            }
+            this.Config.Parked = false;
+            this.Config.IsSlewing = true;
+            this.Config.AtHome = false;
+            SerialConnection.SendCommand(ArduinoSerial.SerialCommand.FindHome);
+            tl.LogMessage("FindHome", "Just started...."+ ArduinoSerial.SerialCommand.FindHome);
+
+            while (!this.Config.AtHome)
+                HC.WaitForMilliseconds(100);
+        }
+
+
         void SerialConnection_CommandQueueReady(object sender, EventArgs e) {
             while (SerialConnection.CommandQueue.Count > 0) {
                 string[] com_args = ((string)SerialConnection.CommandQueue.Pop()).Split(' ');
@@ -349,9 +377,22 @@ namespace ASCOM.Banderita {
                 string command = com_args[0];
 
                 switch (command) {
+                    case "HOMED":
+                        this.Config.AtHome = true;
+                        this.Config.Azimuth = Int32.Parse(com_args[1]);
+                        this.Config.IsSlewing = false;
+                        this.Config.HomePosition = this.Config.Azimuth;
+                        tl.LogMessage("FindHome", "Completed");
+                        break;
                     case "P":
                         this.Config.Azimuth = Int32.Parse(com_args[1]);
                         this.Config.IsSlewing = false;
+                        if(this.Config.HomePosition == this.Config.Azimuth) {
+                            this.Config.AtHome = true;
+                        }
+                        else {
+                            this.Config.AtHome = false;
+                        }
                         break;
                     case "SHUTTER":
                         this.Config.ShutterStatus = (com_args[1] == "OPEN") ? ShutterState.shutterOpen : ShutterState.shutterClosed;
@@ -367,12 +408,6 @@ namespace ASCOM.Banderita {
                 }
             }
         }
-
-        public void FindHome() {
-            tl.LogMessage("FindHome", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("FindHome");
-        }
-
 
         public void OpenShutter() {
             this.Config.ShutterStatus = ShutterState.shutterOpening;
@@ -404,7 +439,6 @@ namespace ASCOM.Banderita {
             set { this.Config.Slaved = value; }
         }
 
-        
         public void SlewToAltitude(double Altitude) {
             tl.LogMessage("SlewToAltitude", "Not implemented");
             throw new ASCOM.MethodNotImplementedException("SlewToAltitude");
@@ -412,7 +446,7 @@ namespace ASCOM.Banderita {
 
         public void SlewToAzimuth(double Azimuth) {
             if (Azimuth > 360 || Azimuth < 0)
-                throw new Exception("Azimuth fuera de rango!");
+                throw new ASCOM.InvalidValueException("Azimuth fuera de rango!");
             this.Config.IsSlewing = true;
             SerialConnection.SendCommand(ArduinoSerial.SerialCommand.Slew, Azimuth);
 
@@ -428,7 +462,7 @@ namespace ASCOM.Banderita {
         public void SyncToAzimuth(double Azimuth) {
             this.Config.Synced = false;
             if (Azimuth > 360 || Azimuth < 0)
-                throw new Exception("Azimuth fuera de rango!");
+                throw new ASCOM.InvalidValueException("Azimuth fuera de rango!");
             SerialConnection.SendCommand(ArduinoSerial.SerialCommand.SyncToAzimuth, Azimuth);
 
             while (!this.Config.Synced)
